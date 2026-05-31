@@ -531,11 +531,18 @@ svg { display: block; }
 .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; flex-shrink: 0; }
 .chart-head .card-title { margin-bottom: 0; }
 .legend-side {
-  display: flex; flex-direction: column; justify-content: center; gap: 12px;
-  width: clamp(96px,9vw,128px); flex-shrink: 0; padding-right: 12px;
-  font-size: 11.5px; color: var(--muted);
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 13px;
+  width: clamp(220px,22vw,300px); flex-shrink: 0; padding-right: 12px;
+  font-size: 13px; color: var(--muted); text-align: center;
 }
-.legend-side span { display: flex; align-items: center; gap: 7px; line-height: 1.3; }
+.legend-side span { display: flex; align-items: center; justify-content: center; gap: 7px; line-height: 1.35; }
+.legend-explain {
+  width: 100%;
+  border: 1px solid var(--line-soft); border-radius: var(--radius);
+  background: var(--fill-soft); padding: 13px 15px;
+}
+.legend-explain .le-title { font-size: 13.5px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.legend-explain .le-text { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
 .legend-side i.lg-line { width: 20px; height: 0; border-top: 2px solid var(--ink); display: inline-block; flex-shrink: 0; }
 .legend-side i.lg-line.dash { border-top: 2px dotted var(--faint); }
 .legend-side i.lg-line.prev { border-top: 2px solid #b3b3b3; }
@@ -548,30 +555,6 @@ svg { display: block; }
 .plot { flex: 1; min-height: 0; position: relative; }
 .plot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .x-axis-label-prog { text-align: center; font-size: 11px; color: var(--faint); margin-top: 6px; flex-shrink: 0; }
-.record-card { display: flex; align-items: center; gap: 13px; flex-shrink: 0; padding: 10px 14px; }
-.record-card .r-ico {
-  width: 38px; height: 38px; border: 1px solid var(--line); border-radius: var(--radius);
-  display: flex; align-items: center; justify-content: center; color: var(--muted); flex-shrink: 0;
-}
-.record-card .r-body { flex: 1; min-width: 0; }
-.record-card .r-label { font-size: 11px; color: var(--faint); margin-bottom: 4px; }
-.record-card .r-headline { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink); }
-.record-card .r-val { height: 14px; width: 60px; background: var(--fill); border-radius: 4px; }
-.record-card .r-date { height: 11px; width: 90px; background: var(--fill); border-radius: 3px; }
-/* % comparison sits inline (to the side) instead of below, keeping the banner short */
-.record-card .r-compare { font-size: 11.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
-.record-card .r-action {
-  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink);
-  border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 12px;
-  white-space: nowrap; flex-shrink: 0; cursor: pointer;
-}
-.record-card .r-action:hover { background: var(--fill-soft); }
-.record-card .r-dismiss {
-  width: 30px; height: 30px; flex-shrink: 0; border-radius: var(--radius);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--faint); cursor: pointer;
-}
-.record-card .r-dismiss:hover { background: var(--fill-soft); color: var(--ink); }
 
 /* ======================================================
    ACHIEVEMENTS
@@ -608,13 +591,22 @@ svg { display: block; }
 }
 .side-stack-ach { display: flex; flex-direction: column; gap: clamp(12px,1.4vh,18px); min-height: 0; }
 .lb-card { display: flex; flex-direction: column; min-height: 0; }
-.lb-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: clamp(7px,0.9vh,11px); }
+.lb-list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: clamp(7px,0.9vh,11px); padding: 4px 15px; }
 .lb-row {
-  flex: 1; min-height: 0;
+  flex: 1; min-height: 0; position: relative;
   display: flex; align-items: center; gap: 11px;
   border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 0 12px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transform-origin: center;
 }
-.lb-row.me { border: 2px solid var(--line); background: var(--fill-soft); }
+.lb-row:hover { transform: scale(1.025); box-shadow: 0 3px 12px rgba(0,0,0,0.08); z-index: 2; }
+/* "me" row stands out a bit bigger by default */
+.lb-row.me {
+  border: 2px solid var(--line); background: var(--fill-soft);
+  transform: scale(1.04); z-index: 1; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+/* my own row stays at its baseline size — no hover effect */
+.lb-row.me:hover { transform: scale(1.04); box-shadow: 0 2px 10px rgba(0,0,0,0.07); z-index: 1; }
 .lb-rank { width: 22px; font-size: 15px; font-weight: 700; color: var(--muted); text-align: center; flex-shrink: 0; }
 .lb-avatar {
   width: 38px; height: 38px; border: 1px solid var(--line-soft); border-radius: 50%; flex-shrink: 0;
@@ -624,6 +616,18 @@ svg { display: block; }
 .lb-name .nm { height: 12px; width: 150px; background: var(--fill); border-radius: 3px; }
 .lb-points { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); flex-shrink: 0; }
 .lb-points .lp-val { height: 12px; width: 42px; background: var(--fill); border-radius: 3px; }
+/* expanded leaderboard scrolls with fixed-height rows */
+.lb-list.scroll { overflow-y: auto; padding-block: 6px; }
+.lb-list.scroll .lb-row { flex: 0 0 auto; height: clamp(48px,7vh,58px); }
+.lb-more {
+  flex-shrink: 0; margin-top: 9px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; border: 1px solid var(--line-soft); border-radius: var(--radius);
+  font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.lb-more:hover { background: var(--fill-soft); color: var(--ink); border-color: var(--line); }
+.lb-more svg { transition: transform 0.2s ease; }
 .streak-card-ach { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .cal-frame {
   flex: 1; min-height: 0; display: flex; flex-direction: column;
@@ -727,6 +731,28 @@ svg { display: block; }
 }
 .dlg-input::placeholder { color: var(--faint); }
 .dlg-input:focus { outline: none; border-color: var(--line); }
+.dlg-input.invalid { border-color: #e5a6a6; }
+.dlg-input.ok { border-color: #7fae87; }
+
+/* live email pattern under the field */
+.email-template {
+  display: flex; align-items: center; gap: 4px; margin-top: 9px;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+.email-template .et-seg {
+  padding: 3px 8px; border-radius: 5px; font-size: 12px; line-height: 1;
+  border: 1px solid transparent; transition: all 0.15s ease;
+}
+.email-template .et-seg.todo { color: var(--faint); background: var(--fill-soft); }
+.email-template .et-seg.done { color: var(--ink); background: var(--fill); border-color: var(--line-soft); }
+.email-template .et-seg.active { color: #fff; background: var(--ink); font-weight: 700; }
+.email-status {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 8px; font-size: 11.5px; color: var(--faint); line-height: 1.4;
+}
+.email-status.valid { color: #4f8c5a; font-weight: 700; }
+.email-status svg { color: #4f8c5a; }
+.btn.primary.disabled { opacity: 0.45; cursor: not-allowed; }
 .dlg-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
 .dlg-actions .btn { height: 38px; }
 
@@ -743,6 +769,18 @@ svg { display: block; }
   border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px; background: var(--paper);
 }
 .badge-dlg .btn { width: 100%; height: 40px; margin-top: 4px; }
+
+/* all-badges dialog (wider, grid of badges) */
+.badges-dialog.MuiPaper-root {
+  border-radius: 10px; border: 1px solid var(--line-soft);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  width: 560px; max-width: calc(100vw - 32px);
+}
+.all-badges-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  max-height: 56vh; overflow-y: auto; padding: 2px; margin-top: 2px;
+}
+.all-badges-grid .badge { width: auto; }
 
 /* appeal flow */
 .appeal-options { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }

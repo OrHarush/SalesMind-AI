@@ -5,11 +5,17 @@ const TIME_TABS = [
   { value: 'week',  label: 'השבוע'  },
   { value: 'month', label: 'החודש'  },
 ]
+// progress uses longer horizons — improvement shows over more time
+const PROGRESS_TABS = [
+  { value: 'month',   label: 'חודש'   },
+  { value: 'quarter', label: 'רבעון'  },
+  { value: 'year',    label: 'שנה'    },
+]
 
 // Segmented control with a sliding pill. The pill is measured from the active
 // button's real geometry (getBoundingClientRect), so it is always perfectly
 // centered and works correctly in RTL, with a smooth left/width transition.
-function TimePeriodSelector({ value, onChange }) {
+function TimePeriodSelector({ value, onChange, tabs = TIME_TABS }) {
   const ref = useRef(null)
   const [pill, setPill] = useState({ left: 0, width: 0 })
 
@@ -26,12 +32,12 @@ function TimePeriodSelector({ value, onChange }) {
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [value])
+  }, [value, tabs])
 
   return (
     <div className="seg" ref={ref}>
       <div className="seg-pill" style={{ left: pill.left, width: pill.width }} />
-      {TIME_TABS.map((t) => (
+      {tabs.map((t) => (
         <button
           key={t.value}
           data-val={t.value}
@@ -180,7 +186,7 @@ function ProfileMenu() {
   )
 }
 
-export default function Shell({ activePage, setActivePage, navigate, timePeriod, setTimePeriod, children }) {
+export default function Shell({ activePage, setActivePage, navigate, timePeriod, setTimePeriod, progressPeriod, setProgressPeriod, children }) {
   // a single call (callReview) lives inside the "כל השיחות" section,
   // so keep that nav item highlighted while viewing a specific call.
   const highlightPage = activePage === 'callReview' ? 'calls' : activePage
@@ -209,9 +215,11 @@ export default function Shell({ activePage, setActivePage, navigate, timePeriod,
           </div>
         </div>
         <div className="topbar-right">
-          {activePage !== 'achievements' && (
+          {activePage === 'progress' ? (
+            <TimePeriodSelector value={progressPeriod} onChange={setProgressPeriod} tabs={PROGRESS_TABS} />
+          ) : activePage !== 'achievements' ? (
             <TimePeriodSelector value={timePeriod} onChange={setTimePeriod} />
-          )}
+          ) : null}
           <div
             className="streak-chip"
             onMouseEnter={() => setStreakOpen(true)}

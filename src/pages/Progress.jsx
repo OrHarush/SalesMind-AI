@@ -2,9 +2,22 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { SparkLineChart } from '@mui/x-charts/SparkLineChart'
 import SuccessChart from '../components/SuccessChart'
 
-const TREND_LABELS = ['שבוע 1', 'שבוע 2', 'שבוע 3', 'שבוע 4', 'שבוע 5', 'שבוע 6']
-const TREND_CURRENT = [42, 55, 52, 68, 76, 82]
-const TREND_PREV = [38, 36, 48, 44, 64, 60]
+// progress horizons are longer than the dashboard's (improvement takes time).
+// month is week-by-week so it's noisier; quarter/year smooth out and trend up.
+const TREND_CONFIG = {
+  month: {
+    labels: ['שבוע 1', 'שבוע 2', 'שבוע 3', 'שבוע 4'],
+    current: [46, 63, 41, 57], prev: [52, 43, 49, 38], xLabel: 'לפי שבוע',
+  },
+  quarter: {
+    labels: ['חודש 1', 'חודש 2', 'חודש 3'],
+    current: [53, 49, 64], prev: [45, 51, 47], xLabel: 'לפי חודש',
+  },
+  year: {
+    labels: ['רבעון 1', 'רבעון 2', 'רבעון 3', 'רבעון 4'],
+    current: [47, 58, 56, 69], prev: [40, 44, 53, 51], xLabel: 'לפי רבעון',
+  },
+}
 
 const UpArrow = ({ size = 10 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -17,16 +30,39 @@ const DownArrow = ({ size = 10 }) => (
   </svg>
 )
 
-const metrics = [
-  { label: 'משך שיחה ממוצע', tag: 'best', tagLabel: 'מצוין', up: true,
-    data: [3.4, 3.1, 3.7, 3.5, 4.2, 4.0, 4.6], unit: ' דק׳' },
-  { label: 'יחס דיבור', tag: 'good', tagLabel: 'טוב', up: false,
-    data: [58, 61, 55, 57, 52, 54, 49], unit: '%' },
-  { label: 'זמני שתיקה', tag: 'warn', tagLabel: 'לשיפור', up: false,
-    data: [13, 11, 14, 12, 10, 11, 9], unit: ' ש׳' },
-  { label: 'קצב דיבור', tag: 'good', tagLabel: 'טוב', up: true,
-    data: [128, 133, 130, 138, 136, 143, 147], unit: ' מילים לדקה' },
+const METRIC_META = [
+  { key: 'duration', label: 'משך שיחה ממוצע', tag: 'best', tagLabel: 'מצוין', up: true,  unit: ' דק׳' },
+  { key: 'ratio',    label: 'יחס דיבור',       tag: 'good', tagLabel: 'טוב',   up: false, unit: '%' },
+  { key: 'silence',  label: 'זמני שתיקה',      tag: 'warn', tagLabel: 'לשיפור', up: false, unit: ' ש׳' },
+  { key: 'pace',     label: 'קצב דיבור',       tag: 'good', tagLabel: 'טוב',   up: true,  unit: ' מילים לדקה' },
 ]
+
+// metric sparkline data per horizon (month noisier, quarter/year smoother & trending)
+const METRIC_DATA = {
+  month: {
+    duration: [3.2, 4.1, 3.4, 4.3],
+    ratio:    [61, 52, 64, 54],
+    silence:  [14, 9, 13, 8],
+    pace:     [126, 141, 130, 145],
+  },
+  quarter: {
+    duration: [3.4, 3.9, 4.4],
+    ratio:    [60, 56, 50],
+    silence:  [13, 11, 8],
+    pace:     [129, 137, 146],
+  },
+  year: {
+    duration: [3.1, 3.6, 3.8, 4.5],
+    ratio:    [64, 58, 55, 49],
+    silence:  [15, 12, 10, 8],
+    pace:     [124, 132, 139, 148],
+  },
+}
+
+function getMetrics(period) {
+  const d = METRIC_DATA[period] || METRIC_DATA.month
+  return METRIC_META.map((m) => ({ ...m, data: d[m.key] }))
+}
 
 function MetricSpark({ data, unit }) {
   return (
@@ -159,46 +195,15 @@ function MetricsTrend({ metrics }) {
   )
 }
 
-export default function Progress() {
-  const [showRecord, setShowRecord] = useState(true)
+export default function Progress({ timePeriod = 'month' }) {
+  const trend = TREND_CONFIG[timePeriod] || TREND_CONFIG.month
+  const metrics = getMetrics(timePeriod)
   return (
     <div className="main page-progress">
       <div>
         <div className="page-title">האם אתה משתפר?</div>
         <div className="page-sub">המגמה הכללית שלך עולה, הנה מה שמתחזק ומה שעדיין דורש תשומת לב.</div>
       </div>
-
-      {/* best-week record — compact, dismissable banner */}
-      {showRecord && (
-        <div className="card record-card">
-          <div className="r-ico">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 21h8M12 17v4"/>
-              <path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
-              <path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/>
-            </svg>
-          </div>
-          <div className="r-body">
-            <div className="r-label">השבוע הטוב ביותר שלך עד כה, לפי שיעור הצלחה</div>
-            <div className="r-headline">
-              <span className="r-val"></span> שיעור הצלחה
-              <span className="r-date"></span>
-              <span className="r-compare"><UpArrow size={11} /> ‎__% מעל השבוע הנוכחי</span>
-            </div>
-          </div>
-          <div className="r-action">
-            מה עשית אחרת באותו שבוע
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-          </div>
-          <div className="r-dismiss" onClick={() => setShowRecord(false)} aria-label="התעלם">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </div>
-        </div>
-      )}
 
       {/* insights + metric trends */}
       <div className="analysis-row">
@@ -262,14 +267,18 @@ export default function Progress() {
         </div>
         <div className="chart-wrap">
           <SuccessChart
-            xLabels={TREND_LABELS}
-            xAxisLabel="לפי שבוע"
+            xLabels={trend.labels}
+            xAxisLabel={trend.xLabel}
             series={[
-              { data: TREND_CURRENT, label: 'התקופה הנוכחית', color: '#3a3a3a' },
-              { data: TREND_PREV, label: 'התקופה הקודמת', color: '#b3b3b3' },
+              { data: trend.current, label: 'התקופה הנוכחית', color: '#3a3a3a' },
+              { data: trend.prev, label: 'התקופה הקודמת', color: '#b3b3b3' },
             ]}
           />
           <div className="legend-side">
+            <div className="legend-explain">
+              <div className="le-title">איך מחושב שיעור ההצלחה?</div>
+              <div className="le-text">אחוז השיחות שבהן השגת את מטרת השיחה, למשל קביעת פגישת המשך או סגירת עסקה, מתוך כלל השיחות בתקופה.</div>
+            </div>
             <span><i className="lg-line"></i>התקופה הנוכחית</span>
             <span><i className="lg-line prev"></i>התקופה הקודמת</span>
           </div>

@@ -17,13 +17,8 @@ const LockIcon = () => (
   </svg>
 )
 
-const lbRows = [
-  { rank: 1, me: false },
-  { rank: 2, me: false },
-  { rank: 3, me: true },
-  { rank: 4, me: false },
-  { rank: 5, me: false },
-]
+// 17 colleagues; "me" is in 3rd place. Only the first 5 show until "view more".
+const lbRows = Array.from({ length: 17 }, (_, i) => ({ rank: i + 1, me: i + 1 === 3 }))
 
 // 9 badges: first 3 earned, the rest locked (the last few sit off-screen until you scroll)
 const BADGES = [
@@ -31,6 +26,9 @@ const BADGES = [
   { locked: true }, { locked: true }, { locked: true },
   { locked: true }, { locked: true }, { locked: true },
 ]
+
+// full collection shown in the "all badges" dialog (first 6 earned, rest locked)
+const ALL_BADGES = Array.from({ length: 18 }, (_, i) => ({ locked: i >= 6 }))
 
 function BadgeStrip({ onOpenBadge }) {
   const ref = useRef(null)
@@ -91,13 +89,47 @@ function BadgeStrip({ onOpenBadge }) {
   )
 }
 
+// xxxx@xxxx.com — tld must be at least two letters (.com, .co, .io ...)
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+\.[a-zA-Z]{2,}$/
+const EMAIL_SEGMENTS = [
+  { key: 'local',  text: 'xxxx' },
+  { key: 'at',     text: '@' },
+  { key: 'domain', text: 'xxxx' },
+  { key: 'dot',    text: '.' },
+  { key: 'tld',    text: 'com' },
+]
+const SEG_ORDER = ['local', 'at', 'domain', 'dot', 'tld']
+
+// which part of the pattern the user is currently filling
+function activeEmailSegment(value) {
+  const at = value.indexOf('@')
+  if (at === -1) return 'local'
+  const afterAt = value.slice(at + 1)
+  if (afterAt === '') return 'at'
+  const dot = afterAt.indexOf('.')
+  if (dot === -1) return 'domain'
+  if (afterAt.slice(dot + 1) === '') return 'dot'
+  return 'tld'
+}
+
 function AddColleagueDialog({ open, onClose }) {
+  const [email, setEmail] = useState('')
+  const valid = EMAIL_RE.test(email)
+  const activeIdx = SEG_ORDER.indexOf(activeEmailSegment(email))
+  const segState = (key) => {
+    if (valid) return 'done'
+    const i = SEG_ORDER.indexOf(key)
+    if (i === activeIdx) return 'active'
+    return i < activeIdx ? 'done' : 'todo'
+  }
+  const close = () => { setEmail(''); onClose() }
+
   return (
-    <Dialog open={open} onClose={onClose} PaperProps={{ className: 'sm-dialog' }}>
+    <Dialog open={open} onClose={close} PaperProps={{ className: 'sm-dialog' }}>
       <div className="dlg">
         <div className="dlg-head">
           <div className="dlg-title">הוספת קולגה</div>
-          <div className="dlg-close" onClick={onClose}>
+          <div className="dlg-close" onClick={close}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
@@ -106,11 +138,31 @@ function AddColleagueDialog({ open, onClose }) {
         <div className="dlg-sub">הזינו את כתובת המייל של הקולגה כדי לשלוח בקשת הוספה.</div>
         <label className="dlg-field">
           <span className="dlg-label">כתובת מייל</span>
-          <input className="dlg-input" type="email" placeholder="name@company.com" dir="ltr" />
+          <input
+            className={`dlg-input${email && !valid ? ' invalid' : ''}${valid ? ' ok' : ''}`}
+            type="email"
+            placeholder="name@company.com"
+            dir="ltr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <div className="email-template" dir="ltr">
+            {EMAIL_SEGMENTS.map((s) => (
+              <span key={s.key} className={`et-seg ${segState(s.key)}`}>{s.text}</span>
+            ))}
+          </div>
+          <div className={`email-status${valid ? ' valid' : ''}`}>
+            {valid ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                כתובת תקינה
+              </>
+            ) : 'השלימו את הכתובת לפי התבנית, כולל סיומת תקינה כמו ‎.com'}
+          </div>
         </label>
         <div className="dlg-actions">
-          <div className="btn subtle" onClick={onClose}>ביטול</div>
-          <div className="btn primary" onClick={onClose}>שליחת בקשה</div>
+          <div className="btn subtle" onClick={close}>ביטול</div>
+          <div className={`btn primary${valid ? '' : ' disabled'}`} onClick={() => valid && close()}>שליחת בקשה</div>
         </div>
       </div>
     </Dialog>
@@ -144,9 +196,37 @@ function BadgeDialog({ badge, onClose }) {
   )
 }
 
+function AllBadgesDialog({ open, onClose, onOpenBadge }) {
+  return (
+    <Dialog open={open} onClose={onClose} PaperProps={{ className: 'badges-dialog' }}>
+      <div className="dlg">
+        <div className="dlg-head">
+          <div className="dlg-title">כל התגים</div>
+          <div className="dlg-close" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+        <div className="dlg-sub">אוסף התגים שאפשר לפתוח לאורך הדרך, לפי התקדמות וביצועים.</div>
+        <div className="all-badges-grid">
+          {ALL_BADGES.map((b, i) => (
+            <div className={`badge${b.locked ? ' locked' : ''}`} key={i} onClick={() => onOpenBadge(b)}>
+              <div className="b-medal">{b.locked ? <LockIcon /> : <MedalIcon />}</div>
+              <div className="b-name"></div>
+              <div className="b-points"><PointsIcon size={13} />{b.locked ? '__ נק׳' : '+__ נק׳'}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Dialog>
+  )
+}
+
 export default function Achievements() {
   const [addOpen, setAddOpen] = useState(false)
   const [activeBadge, setActiveBadge] = useState(null)
+  const [allBadgesOpen, setAllBadgesOpen] = useState(false)
+  const [lbExpanded, setLbExpanded] = useState(false)
+  const visibleRows = lbExpanded ? lbRows : lbRows.slice(0, 5)
   return (
     <div className="main page-achievements">
       <div>
@@ -208,8 +288,8 @@ export default function Achievements() {
               הוספת קולגה
             </div>
           </div>
-          <div className="lb-list">
-            {lbRows.map(({ rank, me }) => (
+          <div className={`lb-list${lbExpanded ? ' scroll' : ''}`}>
+            {visibleRows.map(({ rank, me }) => (
               <div className={`lb-row${me ? ' me' : ''}`} key={rank}>
                 <div className="lb-rank">{rank}</div>
                 <div className="lb-avatar">{me ? 'את/ה' : 'תמונה'}</div>
@@ -220,6 +300,12 @@ export default function Achievements() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="lb-more" onClick={() => setLbExpanded((v) => !v)}>
+            {lbExpanded ? 'הצג פחות' : `הצג עוד (${lbRows.length - 5})`}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: lbExpanded ? 'rotate(180deg)' : 'none' }}>
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
           </div>
         </div>
 
@@ -318,7 +404,7 @@ export default function Achievements() {
       <div className="card">
         <div className="card-head">
           <div className="card-title">תגים</div>
-          <span className="link">לכל התגים</span>
+          <span className="link" onClick={() => setAllBadgesOpen(true)}>לכל התגים</span>
         </div>
         <div className="badge-scroll-wrap">
           <BadgeStrip onOpenBadge={setActiveBadge} />
@@ -328,6 +414,11 @@ export default function Achievements() {
 
       <AddColleagueDialog open={addOpen} onClose={() => setAddOpen(false)} />
       <BadgeDialog badge={activeBadge} onClose={() => setActiveBadge(null)} />
+      <AllBadgesDialog
+        open={allBadgesOpen}
+        onClose={() => setAllBadgesOpen(false)}
+        onOpenBadge={(b) => { setAllBadgesOpen(false); setActiveBadge(b) }}
+      />
     </div>
   )
 }
